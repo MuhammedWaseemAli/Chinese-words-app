@@ -6,11 +6,16 @@ from io import BytesIO
 import random
 import time
 
-# 📂 Path to your Excel file (⚠️ Use raw string for Windows path)
-EXCEL_FILE = r"C:\er5FILES\chinese_learning_streamlit (1).xlsx"
+from pathlib import Path
 
-# Load Excel
-df = pd.read_excel(EXCEL_FILE)
+
+EXCEL_FILE = Path(__file__).parent / "chinese_learning_streamlit (1).xlsx"
+
+@st.cache_data
+def load_data(path):
+    return pd.read_excel(path)
+
+df = load_data(EXCEL_FILE)
 
 # Initialize session state for quiz
 if 'quiz_active' not in st.session_state:
