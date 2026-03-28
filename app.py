@@ -837,7 +837,13 @@ with tab_studymap:
     )
 
     study_df = df[df["Category"].str.lower().str.contains("textbook entire study map", na=False)].copy().reset_index(drop=True)
-
+    
+    
+    # DEBUG - remove after fixing
+    st.write(f"Total rows in df: {len(df)}")
+    st.write(f"Rows matched: {len(study_df)}")
+    st.write("All unique categories found:")
+    st.write(df["Category"].unique().tolist())
     if study_df.empty:
         st.warning("No rows found with Category containing 'textbook entire study map'.")
     else:
