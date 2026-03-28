@@ -9,7 +9,8 @@ import base64
 from io import BytesIO
 from pathlib import Path
 from gtts import gTTS
-
+import asyncio
+import edge_tts
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Traditional Chinese Learning Hub", page_icon="🇹🇼", layout="wide")
 
@@ -404,8 +405,7 @@ analyzer = st.session_state.analyzer
 # ── Audio helpers ──────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner=False)
 @st.cache_data(show_spinner=False)
-import asyncio
-import edge_tts
+
 
 @st.cache_data(show_spinner=False)
 def build_audio_b64(text: str, slow: bool) -> str:
