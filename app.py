@@ -870,12 +870,12 @@ with tab_studymap:
                 st.markdown(f'<div class="para-pinyin">🎵 {pinyin_para}</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-            if st.button(f"🔊 Play Full Passage {row_idx + 1}", key=f"sm_play_para_{row_idx}"):
-                st.session_state[f"sm_play_para_{row_idx}"] = True
-            if st.session_state.get(f"sm_play_para_{row_idx}"):
+            if st.button(f"🔊 Play Full Passage {row_idx + 1}", key=f"sm_play_para_btn_{row_idx}"):
+                st.session_state[f"sm_play_para_flag_{row_idx}"] = True
+            if st.session_state.get(f"sm_play_para_flag_{row_idx}"):
                 with st.spinner("Generating audio..."):
                     inline_audio(chinese_para, slow=slow_audio)
-                st.session_state[f"sm_play_para_{row_idx}"] = False
+                st.session_state[f"sm_play_para_flag_{row_idx}"] = False
 
             # ── Line-by-line expander ──────────────────────────────────────
             with st.expander(f"📋 Line-by-line — Passage {row_idx + 1}"):
