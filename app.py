@@ -18,7 +18,11 @@ EXCEL_FILE = Path(__file__).parent / "chinese_learning_streamlit (1).xlsx"
 
 @st.cache_data
 def load_data(path):
-    return pd.read_excel(path)
+    df = pd.read_excel(path)
+    df.columns = df.columns.str.strip()
+    for col in df.select_dtypes(include='object').columns:
+        df[col] = df[col].str.strip()
+    return df
 
 df = load_data(EXCEL_FILE)
 
@@ -835,27 +839,12 @@ with tab_studymap:
         '</div>',
         unsafe_allow_html=True
     )
-
-    # DEBUG
-    st.write("Column names in your Excel:")
-    st.write(df.columns.tolist())
-    st.write("First 3 rows raw:")
-    st.dataframe(df.head(3))
-
     study_df = df[
         df["Category"].str.strip().str.lower().str.contains("textbook", na=False)
     ].copy().reset_index(drop=True)
-    st.write(f"Rows with exact match 'textbook entire study map': {len(df[df['Category'] == 'textbook entire study map'])}")
-    st.write(f"Rows with exact match 'textbook entire study map' (stripped): {len(df[df['Category'].str.strip() == 'textbook entire study map'])}")
-    st.write("All values in Category column that contain 'textbook':")
-    st.write(df[df['Category'].str.strip().str.lower().str.contains('textbook', na=False)]['Category'].value_counts())
-    st.write(f"Rows matched after filter: {len(study_df)}")
-    st.write("Matched categories:")
-    st.write(study_df["Category"].unique().tolist())
-    st.write("=== RAW first 20 rows of ALL columns ===")
-    st.dataframe(df.head(20))
+    head(20))
     
-    st.write("=== Check if category text appears INSIDE other columns ===")
+    
     for col in df.columns:
         mask = df[col].astype(str).str.contains("textbook entire study map", na=False)
         count = mask.sum()
