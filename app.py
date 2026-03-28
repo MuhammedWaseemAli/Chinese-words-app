@@ -835,8 +835,19 @@ with tab_studymap:
         '</div>',
         unsafe_allow_html=True
     )
-
-    study_df = df[df["Category"].str.lower().str.contains("textbook entire study map", na=False)].copy().reset_index(drop=True)
+# DEBUG
+        st.write("Column names in your Excel:")
+        st.write(df.columns.tolist())
+        st.write("First 3 rows raw:")
+        st.dataframe(df.head(3))
+        
+        study_df = df[
+            df["Category"].str.strip().str.lower().str.contains("textbook", na=False)
+        ].copy().reset_index(drop=True)
+        
+        st.write(f"Rows matched after filter: {len(study_df)}")
+        st.write("Matched categories:")
+        st.write(study_df["Category"].unique().tolist())
     
     
     # DEBUG - remove after fixing
