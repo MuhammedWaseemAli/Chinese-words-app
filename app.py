@@ -839,10 +839,10 @@ with tab_studymap:
         '</div>',
         unsafe_allow_html=True
     )
+
     study_df = df[
         df["Category"].str.strip().str.lower().str.contains("textbook", na=False)
     ].copy().reset_index(drop=True)
-    head(20))
     
     
     for col in df.columns:
