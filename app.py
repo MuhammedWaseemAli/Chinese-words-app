@@ -827,9 +827,6 @@ with tab_analyzer:
         st.info("Click **Analyze** to process your text.")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# TAB 6 — TEXTBOOK ENTIRE STUDY MAP
-# ══════════════════════════════════════════════════════════════════════════════
 with tab_studymap:
     st.markdown('<div class="study-map-title">🗺️ Textbook Entire Study Map</div>', unsafe_allow_html=True)
     st.markdown(
@@ -842,50 +839,46 @@ with tab_studymap:
     study_df = df[df["Category"].str.lower().str.contains("textbook entire study map", na=False)].copy().reset_index(drop=True)
 
     if study_df.empty:
-        st.warning(
-            "No rows found with **Category = 'textbook entire study map'**.\n\n"
-            "Add rows to your Excel file with that category. "
-            "Put the Chinese text in **Traditional Chinese Word**, "
-            "English in **English Word**, and pinyin in **Pinyin**."
-        )
+        st.warning("No rows found with Category containing 'textbook entire study map'.")
     else:
-        # ── Passage selector ──────────────────────────────────────────────
         total_passages = len(study_df)
 
+        # Build passage labels using the Chinese column (English Word column based on your Excel layout)
         passage_labels = []
         for i, row in study_df.iterrows():
-            chinese_preview = str(row.get("Traditional Chinese Word", "")).strip()[:20]
+            # Try to detect which column has Chinese characters
+            col_a = str(row.get("Traditional Chinese Word", "")).strip()
+            col_b = str(row.get("English Word", "")).strip()
+            # Chinese text will contain Chinese characters
+            if any('\u4e00' <= c <= '\u9fff' for c in col_a):
+                chinese_preview = col_a[:15]
+            else:
+                chinese_preview = col_b[:15]
             passage_labels.append(f"Passage {i + 1} — {chinese_preview}…")
 
-        col_sel1, col_sel2, col_sel3 = st.columns([3, 1, 1])
-        with col_sel1:
-            selected_label = st.selectbox(
-                "📖 Select a passage",
-                passage_labels,
-                key="sm_passage_select"
-            )
-        with col_sel2:
-            sm_speed = st.radio("🔊 Speed", ["Normal", "Slow"], horizontal=True, key="sm_speed")
-        with col_sel3:
+        # ── Controls row ──────────────────────────────────────────────────
+        ctrl1, ctrl2, ctrl3 = st.columns([4, 2, 2])
+        with ctrl1:
+            selected_label = st.selectbox("📖 Select a passage", passage_labels, key="sm_passage_select")
+        with ctrl2:
+            sm_speed  = st.radio("🔊 Speed", ["Normal", "Slow"], horizontal=True, key="sm_speed")
+        with ctrl3:
             st.markdown("<br>", unsafe_allow_html=True)
             show_all = st.checkbox("Show all passages", key="sm_show_all")
 
-        slow_audio = sm_speed == "Slow"
-
-        # Which passages to render
+        slow_audio   = sm_speed == "Slow"
         selected_idx = passage_labels.index(selected_label)
-        rows_to_show = study_df.iterrows() if show_all else [(selected_idx, study_df.iloc[selected_idx])]
 
-        # ── Passage navigation buttons ────────────────────────────────────
+        # ── Prev / Next navigation ────────────────────────────────────────
         if not show_all:
             nav1, nav2, nav3 = st.columns([1, 3, 1])
             with nav1:
-                if st.button("⬅️ Previous", key="sm_prev", disabled=selected_idx == 0):
+                if st.button("⬅️ Prev", key="sm_prev", disabled=selected_idx == 0):
                     st.session_state["sm_passage_select"] = passage_labels[selected_idx - 1]
                     st.rerun()
             with nav2:
                 st.markdown(
-                    f"<p style='text-align:center;color:#666;margin-top:8px'>"
+                    f"<p style='text-align:center;color:#666;padding-top:8px'>"
                     f"Passage {selected_idx + 1} of {total_passages}</p>",
                     unsafe_allow_html=True
                 )
@@ -896,17 +889,36 @@ with tab_studymap:
 
         st.divider()
 
-        # ── Render passage(s) ─────────────────────────────────────────────
-        for row_idx, row in rows_to_show:
-            chinese_para = str(row.get("Traditional Chinese Word", "")).strip()
-            english_para = str(row.get("English Word", "")).strip()
-            pinyin_para  = str(row.get("Pinyin", "")).strip()
+        # ── Determine which rows to render (list, not generator) ──────────
+        if show_all:
+            rows_to_render = list(study_df.iterrows())
+        else:
+            rows_to_render = [(selected_idx, study_df.iloc[selected_idx])]
+
+        # ── Render each passage ───────────────────────────────────────────
+        for row_idx, row in rows_to_render:
+            # Auto-detect which column is Chinese vs English
+            col_a = str(row.get("Traditional Chinese Word", "")).strip()
+            col_b = str(row.get("English Word", "")).strip()
+            col_c = str(row.get("Pinyin", "")).strip()
+
+            if any('\u4e00' <= c <= '\u9fff' for c in col_a):
+                chinese_para = col_a
+                english_para = col_b
+            else:
+                chinese_para = col_b
+                english_para = col_a
+            pinyin_para = col_c
+
             if not chinese_para:
                 continue
 
-            # ── Full paragraph card ────────────────────────────────────────
+            # ── Full paragraph card ───────────────────────────────────────
             st.markdown('<div class="para-card">', unsafe_allow_html=True)
-            st.markdown(f'<div class="para-card-title">📖 Passage {row_idx + 1} of {total_passages}</div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="para-card-title">📖 Passage {row_idx + 1} of {total_passages}</div>',
+                unsafe_allow_html=True
+            )
             st.markdown(f'<div class="para-chinese">{chinese_para}</div>', unsafe_allow_html=True)
             if english_para:
                 st.markdown(f'<div class="para-english">🇬🇧 {english_para}</div>', unsafe_allow_html=True)
@@ -921,14 +933,15 @@ with tab_studymap:
                     inline_audio(chinese_para, slow=slow_audio)
                 st.session_state[f"sm_play_para_flag_{row_idx}"] = False
 
-            # ── Line-by-line expander ──────────────────────────────────────
+            # ── Line-by-line expander ─────────────────────────────────────
             with st.expander(f"📋 Line-by-line — Passage {row_idx + 1}"):
                 sentences = [s.strip() for s in re.split(r'(?<=[。？！\n])', chinese_para) if s.strip()]
+                if not sentences:
+                    # Fallback: split by newline for dialogue format
+                    sentences = [s.strip() for s in chinese_para.split('\n') if s.strip()]
                 for s_idx, sentence in enumerate(sentences):
                     st.markdown(
-                        f'<div class="line-card">'
-                        f'<div class="line-chinese">{sentence}</div>'
-                        f'</div>',
+                        f'<div class="line-card"><div class="line-chinese">{sentence}</div></div>',
                         unsafe_allow_html=True
                     )
                     if st.button("🔊 Play", key=f"sm_line_btn_{row_idx}_{s_idx}"):
@@ -938,7 +951,7 @@ with tab_studymap:
                             inline_audio(sentence, slow=slow_audio)
                         st.session_state[f"sm_line_flag_{row_idx}_{s_idx}"] = False
 
-            # ── Deep analysis expander ─────────────────────────────────────
+            # ── Deep analysis expander ────────────────────────────────────
             with st.expander(f"🔬 Full Analysis — Passage {row_idx + 1}"):
 
                 st.markdown("#### 🈶 Pinyin Above Every Character")
@@ -946,10 +959,11 @@ with tab_studymap:
                 st.divider()
 
                 st.markdown("#### 🧩 Word Chips per Sentence")
-                for s_idx, sentence in enumerate(
-                    [s.strip() for s in re.split(r'(?<=[。？！\n])', chinese_para) if s.strip()]
-                ):
-                    st.markdown(f"**Sentence {s_idx + 1}:** `{sentence}`")
+                chip_sentences = [s.strip() for s in re.split(r'(?<=[。？！\n])', chinese_para) if s.strip()]
+                if not chip_sentences:
+                    chip_sentences = [s.strip() for s in chinese_para.split('\n') if s.strip()]
+                for s_idx, sentence in enumerate(chip_sentences):
+                    st.markdown(f"**Line {s_idx + 1}:** `{sentence}`")
                     with st.spinner("Segmenting..."):
                         st.markdown(analyzer.word_chips_html(sentence), unsafe_allow_html=True)
 
