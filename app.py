@@ -845,7 +845,10 @@ with tab_studymap:
     study_df = df[
         df["Category"].str.strip().str.lower().str.contains("textbook", na=False)
     ].copy().reset_index(drop=True)
-
+    st.write(f"Rows with exact match 'textbook entire study map': {len(df[df['Category'] == 'textbook entire study map'])}")
+    st.write(f"Rows with exact match 'textbook entire study map' (stripped): {len(df[df['Category'].str.strip() == 'textbook entire study map'])}")
+    st.write("All values in Category column that contain 'textbook':")
+    st.write(df[df['Category'].str.strip().str.lower().str.contains('textbook', na=False)]['Category'].value_counts())
     st.write(f"Rows matched after filter: {len(study_df)}")
     st.write("Matched categories:")
     st.write(study_df["Category"].unique().tolist())
