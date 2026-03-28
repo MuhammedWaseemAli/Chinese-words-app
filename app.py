@@ -845,21 +845,7 @@ with tab_studymap:
     ].copy().reset_index(drop=True)
     
     
-    for col in df.columns:
-        mask = df[col].astype(str).str.contains("textbook entire study map", na=False)
-        count = mask.sum()
-        if count > 0:
-            st.write(f"Column '{col}' contains 'textbook entire study map' in {count} rows")
     
-    st.write("=== Shape of dataframe ===")
-    st.write(df.shape)
-    
-    st.write("=== All column names ===")
-    st.write(df.columns.tolist())
-    st.write(f"Total rows in df: {len(df)}")
-    st.write(f"Rows matched: {len(study_df)}")
-    st.write("All unique categories found:")
-    st.write(df["Category"].unique().tolist())
 
     if study_df.empty:
         st.warning("No rows found with Category containing 'textbook entire study map'.")
