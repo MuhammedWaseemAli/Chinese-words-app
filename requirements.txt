@@ -3,3 +3,5 @@ pandas
 gTTS
 openpyxl
 jieba
+asyncio
+edge_tts
