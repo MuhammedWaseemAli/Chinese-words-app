@@ -876,14 +876,12 @@ with tab_studymap:
                         f'</div>',
                         unsafe_allow_html=True
                     )
-                    if st.button("🔊 Play", key=f"sm_line_{row_idx}_{s_idx}"):
-                        st.session_state[f"sm_line_{row_idx}_{s_idx}"] = True
-                    if st.session_state.get(f"sm_line_{row_idx}_{s_idx}"):
+                    if st.button("🔊 Play", key=f"sm_line_btn_{row_idx}_{s_idx}"):
+                        st.session_state[f"sm_line_play_{row_idx}_{s_idx}"] = True
+                    if st.session_state.get(f"sm_line_play_{row_idx}_{s_idx}"):
                         with st.spinner("Generating audio..."):
                             inline_audio(sentence, slow=slow_audio)
-                        st.session_state[f"sm_line_{row_idx}_{s_idx}"] = False
-
-            # ── Deep analysis expander ─────────────────────────────────────
+                        st.session_state[f"sm_line_play_{row_idx}_{s_idx}"] = False            # ── Deep analysis expander ─────────────────────────────────────
             with st.expander(f"🔬 Full Analysis — Passage {row_idx + 1}"):
 
                 st.markdown("#### 🈶 Pinyin Above Every Character")
