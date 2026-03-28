@@ -839,7 +839,7 @@ with tab_studymap:
         unsafe_allow_html=True
     )
 
-    study_df = df[df["Category"].str.lower().str.contains("textbook entire study map", na=False)].copy()
+    study_df = df[df["Category"].str.lower().str.contains("textbook entire study map", na=False)].copy().reset_index(drop=True)
 
     if study_df.empty:
         st.warning(
@@ -849,11 +849,55 @@ with tab_studymap:
             "English in **English Word**, and pinyin in **Pinyin**."
         )
     else:
-        sm_speed  = st.radio("🔊 Audio speed", ["Normal", "Slow"], horizontal=True, key="sm_speed")
+        # ── Passage selector ──────────────────────────────────────────────
+        total_passages = len(study_df)
+
+        passage_labels = []
+        for i, row in study_df.iterrows():
+            chinese_preview = str(row.get("Traditional Chinese Word", "")).strip()[:20]
+            passage_labels.append(f"Passage {i + 1} — {chinese_preview}…")
+
+        col_sel1, col_sel2, col_sel3 = st.columns([3, 1, 1])
+        with col_sel1:
+            selected_label = st.selectbox(
+                "📖 Select a passage",
+                passage_labels,
+                key="sm_passage_select"
+            )
+        with col_sel2:
+            sm_speed = st.radio("🔊 Speed", ["Normal", "Slow"], horizontal=True, key="sm_speed")
+        with col_sel3:
+            st.markdown("<br>", unsafe_allow_html=True)
+            show_all = st.checkbox("Show all passages", key="sm_show_all")
+
         slow_audio = sm_speed == "Slow"
+
+        # Which passages to render
+        selected_idx = passage_labels.index(selected_label)
+        rows_to_show = study_df.iterrows() if show_all else [(selected_idx, study_df.iloc[selected_idx])]
+
+        # ── Passage navigation buttons ────────────────────────────────────
+        if not show_all:
+            nav1, nav2, nav3 = st.columns([1, 3, 1])
+            with nav1:
+                if st.button("⬅️ Previous", key="sm_prev", disabled=selected_idx == 0):
+                    st.session_state["sm_passage_select"] = passage_labels[selected_idx - 1]
+                    st.rerun()
+            with nav2:
+                st.markdown(
+                    f"<p style='text-align:center;color:#666;margin-top:8px'>"
+                    f"Passage {selected_idx + 1} of {total_passages}</p>",
+                    unsafe_allow_html=True
+                )
+            with nav3:
+                if st.button("Next ➡️", key="sm_next", disabled=selected_idx == total_passages - 1):
+                    st.session_state["sm_passage_select"] = passage_labels[selected_idx + 1]
+                    st.rerun()
+
         st.divider()
 
-        for row_idx, (_, row) in enumerate(study_df.iterrows()):
+        # ── Render passage(s) ─────────────────────────────────────────────
+        for row_idx, row in rows_to_show:
             chinese_para = str(row.get("Traditional Chinese Word", "")).strip()
             english_para = str(row.get("English Word", "")).strip()
             pinyin_para  = str(row.get("Pinyin", "")).strip()
@@ -862,7 +906,7 @@ with tab_studymap:
 
             # ── Full paragraph card ────────────────────────────────────────
             st.markdown('<div class="para-card">', unsafe_allow_html=True)
-            st.markdown(f'<div class="para-card-title">📖 Passage {row_idx + 1}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="para-card-title">📖 Passage {row_idx + 1} of {total_passages}</div>', unsafe_allow_html=True)
             st.markdown(f'<div class="para-chinese">{chinese_para}</div>', unsafe_allow_html=True)
             if english_para:
                 st.markdown(f'<div class="para-english">🇬🇧 {english_para}</div>', unsafe_allow_html=True)
@@ -888,11 +932,13 @@ with tab_studymap:
                         unsafe_allow_html=True
                     )
                     if st.button("🔊 Play", key=f"sm_line_btn_{row_idx}_{s_idx}"):
-                        st.session_state[f"sm_line_play_{row_idx}_{s_idx}"] = True
-                    if st.session_state.get(f"sm_line_play_{row_idx}_{s_idx}"):
+                        st.session_state[f"sm_line_flag_{row_idx}_{s_idx}"] = True
+                    if st.session_state.get(f"sm_line_flag_{row_idx}_{s_idx}"):
                         with st.spinner("Generating audio..."):
                             inline_audio(sentence, slow=slow_audio)
-                        st.session_state[f"sm_line_play_{row_idx}_{s_idx}"] = False            # ── Deep analysis expander ─────────────────────────────────────
+                        st.session_state[f"sm_line_flag_{row_idx}_{s_idx}"] = False
+
+            # ── Deep analysis expander ─────────────────────────────────────
             with st.expander(f"🔬 Full Analysis — Passage {row_idx + 1}"):
 
                 st.markdown("#### 🈶 Pinyin Above Every Character")
