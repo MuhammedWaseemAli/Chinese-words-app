@@ -835,26 +835,26 @@ with tab_studymap:
         '</div>',
         unsafe_allow_html=True
     )
-# DEBUG
-        st.write("Column names in your Excel:")
-        st.write(df.columns.tolist())
-        st.write("First 3 rows raw:")
-        st.dataframe(df.head(3))
-        
-        study_df = df[
-            df["Category"].str.strip().str.lower().str.contains("textbook", na=False)
-        ].copy().reset_index(drop=True)
-        
-        st.write(f"Rows matched after filter: {len(study_df)}")
-        st.write("Matched categories:")
-        st.write(study_df["Category"].unique().tolist())
-    
-    
-    # DEBUG - remove after fixing
+
+    # DEBUG
+    st.write("Column names in your Excel:")
+    st.write(df.columns.tolist())
+    st.write("First 3 rows raw:")
+    st.dataframe(df.head(3))
+
+    study_df = df[
+        df["Category"].str.strip().str.lower().str.contains("textbook", na=False)
+    ].copy().reset_index(drop=True)
+
+    st.write(f"Rows matched after filter: {len(study_df)}")
+    st.write("Matched categories:")
+    st.write(study_df["Category"].unique().tolist())
+
     st.write(f"Total rows in df: {len(df)}")
     st.write(f"Rows matched: {len(study_df)}")
     st.write("All unique categories found:")
     st.write(df["Category"].unique().tolist())
+
     if study_df.empty:
         st.warning("No rows found with Category containing 'textbook entire study map'.")
     else:
