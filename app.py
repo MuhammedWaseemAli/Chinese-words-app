@@ -404,21 +404,22 @@ analyzer = st.session_state.analyzer
 # ── Audio helpers ──────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner=False)
 @st.cache_data(show_spinner=False)
+import asyncio
+import edge_tts
+
+@st.cache_data(show_spinner=False)
 def build_audio_b64(text: str, slow: bool) -> str:
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            tts = gTTS(text=text, lang='zh-tw', slow=slow)
-            buf = BytesIO()
-            tts.write_to_fp(buf)
-            buf.seek(0)
-            return base64.b64encode(buf.read()).decode()
-        except Exception as e:
-            if "429" in str(e) and attempt < max_retries - 1:
-                wait = 2 ** attempt  # 1s, 2s, 4s
-                time.sleep(wait)
-                continue
-            raise e
+    async def _gen():
+        rate = "-20%" if slow else "+0%"
+        communicate = edge_tts.Communicate(text, voice="zh-TW-HsiaoChenNeural", rate=rate)
+        buf = BytesIO()
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                buf.write(chunk["data"])
+        buf.seek(0)
+        return base64.b64encode(buf.read()).decode()
+    
+    return asyncio.run(_gen())
 
 def render_audio(slot, text: str, slow: bool = False):
     try:
