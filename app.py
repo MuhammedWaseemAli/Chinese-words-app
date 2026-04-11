@@ -253,68 +253,60 @@ class ComprehensivePinyinConverter:
             pass
         return None
 
-def _pypinyin_convert(self, text):
-    try:
-        from pypinyin import pinyin, Style
-        result = pinyin(text, style=Style.TONE, heteronym=False)
-        parts = [item[0] for item in result if item]
-        if parts:
-            return ' '.join(parts)
-    except Exception:
-        pass
-    return None
+    def _pypinyin_convert(self, text):
+        try:
+            from pypinyin import pinyin, Style
+            result = pinyin(text, style=Style.TONE, heteronym=False)
+            parts = [item[0] for item in result if item]
+            if parts:
+                return ' '.join(parts)
+        except Exception:
+            pass
+        return None
 
-def _char_by_char(self, text):
-    try:
-        from pypinyin import pinyin as pyp, Style
-        result = pyp(text, style=Style.TONE, heteronym=False)
-        parts = [item[0] for item in result if item]
-        if parts:
-            return ' '.join(parts)
-    except Exception:
-        pass
-    # Final fallback — local dict only, no crash
-    parts = []
-    for c in text:
-        if '\u4e00' <= c <= '\u9fff':
-            py = self.pinyin_dict.get(c, f'[{c}]')
-            parts.append(py)
-        elif c.strip():
-            parts.append(c)
-    return ' '.join(parts)
+    def _char_by_char(self, text):
+        try:
+            from pypinyin import pinyin as pyp, Style
+            result = pyp(text, style=Style.TONE, heteronym=False)
+            parts = [item[0] for item in result if item]
+            if parts:
+                return ' '.join(parts)
+        except Exception:
+            pass
+        parts = []
+        for c in text:
+            if '\u4e00' <= c <= '\u9fff':
+                parts.append(self.pinyin_dict.get(c, f'[{c}]'))
+            elif c.strip():
+                parts.append(c)
+        return ' '.join(parts)
 
-def get_comprehensive_pinyin(self, text):
-    if not text or not text.strip():
-        return ""
-    text = text.strip()
-    if text in self.cache:
-        return self.cache[text]
-
-    # 1. Local dict (single char, instant)
-    if len(text) == 1 and '\u4e00' <= text <= '\u9fff':
-        b = self.pinyin_dict.get(text)
-        if b:
-            self.cache[text] = b
-            return b
-
-    # 2. pypinyin — offline, covers all chars including traditional
-    py = self._pypinyin_convert(text)
-    if py and '[' not in py:
-        self.cache[text] = py
-        return py
-
-    # 3. Google Translate API (online, best tones for multi-syllable words)
-    g = self._google_pinyin(text)
-    if g and g != text:
-        cleaned = ' '.join(re.sub(r'[^\w\sāáǎàēéěèīíǐìōóǒòūúǔùüǘǚǜ]', ' ', g).split())
-        if cleaned and not any('\u4e00' <= c <= '\u9fff' for c in cleaned):
-            self.cache[text] = cleaned
-            return cleaned
-
-    # 4. char-by-char (pypinyin per character)
-    cb = self._char_by_char(text)
-    self.cache[text] = cb
-    return cb
+    def get_comprehensive_pinyin(self, text):
+        if not text or not text.strip():
+            return ""
+        text = text.strip()
+        if text in self.cache:
+            return self.cache[text]
+        if len(text) == 1 and '\u4e00' <= text <= '\u9fff':
+            b = self.pinyin_dict.get(text)
+            if b:
+                self.cache[text] = b
+                return b
+        py = self._pypinyin_convert(text)
+        if py and '[' not in py:
+            self.cache[text] = py
+            return py
+        g = self._google_pinyin(text)
+        if g and g != text:
+            cleaned = ' '.join(
+                re.sub(r'[^\w\sāáǎàēéěèīíǐìōóǒòūúǔùüǘǚǜ]', ' ', g).split()
+            )
+            if cleaned and not any('\u4e00' <= c <= '\u9fff' for c in cleaned):
+                self.cache[text] = cleaned
+                return cleaned
+        cb = self._char_by_char(text)
+        self.cache[text] = cb
+        return cb
 
     def translate_text(self, text):
         if not text or not text.strip():
