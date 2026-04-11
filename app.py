@@ -254,32 +254,31 @@ class ComprehensivePinyinConverter:
         return None
 
 def _pypinyin_convert(self, text):
-    """Offline fallback using pypinyin — covers virtually all CJK characters."""
     try:
         from pypinyin import pinyin, Style
         result = pinyin(text, style=Style.TONE, heteronym=False)
-        return ' '.join(item[0] for item in result if item)
-    except ImportError:
-        return None
+        parts = [item[0] for item in result if item]
+        if parts:
+            return ' '.join(parts)
     except Exception:
-        return None
+        pass
+    return None
 
 def _char_by_char(self, text):
-    """Last-resort: character-by-character using local dict then pypinyin."""
     try:
         from pypinyin import pinyin as pyp, Style
         result = pyp(text, style=Style.TONE, heteronym=False)
-        return ' '.join(item[0] for item in result if item)
+        parts = [item[0] for item in result if item]
+        if parts:
+            return ' '.join(parts)
     except Exception:
         pass
+    # Final fallback — local dict only, no crash
     parts = []
     for c in text:
         if '\u4e00' <= c <= '\u9fff':
-            py = self.pinyin_dict.get(c)
-            if py:
-                parts.append(py)
-            else:
-                parts.append(f'[{c}]')
+            py = self.pinyin_dict.get(c, f'[{c}]')
+            parts.append(py)
         elif c.strip():
             parts.append(c)
     return ' '.join(parts)
