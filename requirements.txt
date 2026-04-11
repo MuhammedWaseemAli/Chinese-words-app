@@ -5,3 +5,4 @@ openpyxl
 jieba
 asyncio
 edge_tts
+pypinyin
