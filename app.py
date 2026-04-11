@@ -11,6 +11,7 @@ from pathlib import Path
 from gtts import gTTS
 import asyncio
 import edge_tts
+import pypinyin
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Traditional Chinese Learning Hub", page_icon="🇹🇼", layout="wide")
 
@@ -252,52 +253,69 @@ class ComprehensivePinyinConverter:
             pass
         return None
 
-    def _char_by_char(self, text):
-        parts = []
-        for c in text:
-            if '\u4e00' <= c <= '\u9fff':
-                py = self.pinyin_dict.get(c)
-                if py:
-                    parts.append(py)
-                else:
-                    online = self._google_pinyin(c)
-                    if online and online != c:
-                        cleaned = re.sub(r'[^\w\sāáǎàēéěèīíǐìōóǒòūúǔùüǘǚǜ]','',online)
-                        if cleaned:
-                            self.pinyin_dict[c] = cleaned
-                            parts.append(cleaned)
-                        else:
-                            parts.append(f'[{c}]')
-                    else:
-                        parts.append(f'[{c}]')
-            elif c.strip():
-                parts.append(c)
-        return ' '.join(parts)
+def _pypinyin_convert(self, text):
+    """Offline fallback using pypinyin — covers virtually all CJK characters."""
+    try:
+        from pypinyin import pinyin, Style
+        result = pinyin(text, style=Style.TONE, heteronym=False)
+        return ' '.join(item[0] for item in result if item)
+    except ImportError:
+        return None
+    except Exception:
+        return None
 
-    def get_comprehensive_pinyin(self, text):
-        if not text or not text.strip():
-            return ""
-        text = text.strip()
-        if text in self.cache:
-            return self.cache[text]
-        if len(text) == 1 and '\u4e00' <= text <= '\u9fff':
-            b = self.pinyin_dict.get(text)
-            if b:
-                self.cache[text] = b
-                return b
-        g = self._google_pinyin(text)
-        if g and g != text:
-            cleaned = ' '.join(re.sub(r'[^\w\sāáǎàēéěèīíǐìōóǒòūúǔùüǘǚǜ]',' ',g).split())
-            if cleaned and not any('\u4e00' <= c <= '\u9fff' for c in cleaned):
-                self.cache[text] = cleaned
-                return cleaned
-        cb = self._char_by_char(text)
-        if cb and '[' not in cb:
-            self.cache[text] = cb
-            return cb
-        partial = ' '.join(self.pinyin_dict.get(c,c) if '\u4e00' <= c <= '\u9fff' else c for c in text)
-        self.cache[text] = partial
-        return partial
+def _char_by_char(self, text):
+    """Last-resort: character-by-character using local dict then pypinyin."""
+    try:
+        from pypinyin import pinyin as pyp, Style
+        result = pyp(text, style=Style.TONE, heteronym=False)
+        return ' '.join(item[0] for item in result if item)
+    except Exception:
+        pass
+    parts = []
+    for c in text:
+        if '\u4e00' <= c <= '\u9fff':
+            py = self.pinyin_dict.get(c)
+            if py:
+                parts.append(py)
+            else:
+                parts.append(f'[{c}]')
+        elif c.strip():
+            parts.append(c)
+    return ' '.join(parts)
+
+def get_comprehensive_pinyin(self, text):
+    if not text or not text.strip():
+        return ""
+    text = text.strip()
+    if text in self.cache:
+        return self.cache[text]
+
+    # 1. Local dict (single char, instant)
+    if len(text) == 1 and '\u4e00' <= text <= '\u9fff':
+        b = self.pinyin_dict.get(text)
+        if b:
+            self.cache[text] = b
+            return b
+
+    # 2. pypinyin — offline, covers all chars including traditional
+    py = self._pypinyin_convert(text)
+    if py and '[' not in py:
+        self.cache[text] = py
+        return py
+
+    # 3. Google Translate API (online, best tones for multi-syllable words)
+    g = self._google_pinyin(text)
+    if g and g != text:
+        cleaned = ' '.join(re.sub(r'[^\w\sāáǎàēéěèīíǐìōóǒòūúǔùüǘǚǜ]', ' ', g).split())
+        if cleaned and not any('\u4e00' <= c <= '\u9fff' for c in cleaned):
+            self.cache[text] = cleaned
+            return cleaned
+
+    # 4. char-by-char (pypinyin per character)
+    cb = self._char_by_char(text)
+    self.cache[text] = cb
+    return cb
 
     def translate_text(self, text):
         if not text or not text.strip():
