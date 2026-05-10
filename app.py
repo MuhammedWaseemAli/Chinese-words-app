@@ -381,7 +381,7 @@ class EnhancedChineseAnalyzer:
         html = '<span class="ruby-wrap">'
         for c in text:
             if '\u4e00' <= c <= '\u9fff':
-                py = self.pc.pinyin_dict.get(c, '?')
+                py = self.get_pinyin(c)   # ← uses pypinyin + Google, same as word_chips_html
                 html += f'<ruby>{c}<rt>{py}</rt></ruby>'
             else:
                 html += c
@@ -850,7 +850,7 @@ with tab_studymap:
     )
 
     study_df = df[
-        df["Category"].str.strip().str.lower().str.contains("textbook", na=False)
+        df["Category"].str.strip().str.lower() == "textbook entire study map"
     ].copy().reset_index(drop=True)
     
     
