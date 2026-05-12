@@ -493,13 +493,14 @@ if st.session_state.play_audio_text:
     st.session_state.play_audio_slow = False
 
 # ── Tabs ───────────────────────────────────────────────────────────────────────
-tab_learn, tab_quiz, tab_speech, tab_progress, tab_analyzer, tab_studymap = st.tabs([
+tab_learn, tab_quiz, tab_speech, tab_progress, tab_analyzer, tab_studymap, tab_writing = st.tabs([
     "📚 Learn Words",
     "🧠 Quiz",
     "🎤 Speech Practice",
     "📊 Progress",
     "🔍 Text Analyzer",
     "🗺️ Textbook Study Map",
+    "✍️ Writing Practice"
 ])
 
 
@@ -1013,5 +1014,149 @@ with tab_studymap:
                                     st.markdown(f'<div style="color:white;font-size:16px;">{cd["meaning"][:22]}</div>', unsafe_allow_html=True)
                                     st.markdown('</div>', unsafe_allow_html=True)
                         st.markdown("")
-
+                 # ══════════════════════════════════════════════════════════════════════════════
+                # TAB 7 — WRITING PRACTICE
+                # ══════════════════════════════════════════════════════════════════════════════
+                with tab_writing:
+                
+                    st.markdown("## ✍️ Chinese Writing Practice")
+                
+                    # Only take Most commonly used category
+                    writing_df = df[
+                        df["Category"].str.strip().str.lower() == "most commonly used"
+                    ].copy()
+                
+                    if writing_df.empty:
+                        st.warning("No rows found with category = Most commonly used")
+                
+                    else:
+                
+                        # Extract only Traditional Chinese words
+                        chinese_words = writing_df["Traditional Chinese Word"].dropna().tolist()
+                
+                        # Break into individual characters
+                        all_chars = []
+                
+                        for word in chinese_words:
+                            for char in str(word):
+                                if '\u4e00' <= char <= '\u9fff':
+                                    all_chars.append(char)
+                
+                        # Remove duplicates while preserving order
+                        unique_chars = list(dict.fromkeys(all_chars))
+                
+                        st.success(f"Loaded {len(unique_chars)} unique Chinese characters")
+                
+                        selected_char = st.selectbox(
+                            "Choose character to practice",
+                            unique_chars
+                        )
+                
+                        # Pinyin + meaning
+                        char_pinyin = analyzer.get_pinyin(selected_char)
+                        char_meaning = analyzer.get_translation(selected_char)
+                
+                        st.markdown("---")
+                
+                        # Display big character
+                        st.markdown(
+                            f"""
+                            <div style="
+                                font-size:120px;
+                                text-align:center;
+                                font-weight:bold;
+                                color:#185FA5;
+                                margin-bottom:20px;
+                            ">
+                            {selected_char}
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                
+                        st.markdown(
+                            f"""
+                            <div style="text-align:center;font-size:24px;color:#666;">
+                            {char_pinyin}
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                
+                        st.markdown(
+                            f"""
+                            <div style="text-align:center;font-size:22px;color:#27ae60;">
+                            {char_meaning}
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                
+                        col1, col2 = st.columns(2)
+                
+                        with col1:
+                            if st.button("🔊 Pronounce Character"):
+                                inline_audio(selected_char)
+                
+                        with col2:
+                            if st.button("🎲 Random Character"):
+                                random_char = random.choice(unique_chars)
+                                st.session_state["writing_random_char"] = random_char
+                                st.rerun()
+                
+                        st.markdown("---")
+                
+                        # Writing grid practice
+                        practice_html = f'''
+                        <div style="
+                            border:2px solid #ccc;
+                            border-radius:12px;
+                            padding:20px;
+                            background:#fafafa;
+                            text-align:center;
+                        ">
+                
+                        <div style="
+                            font-size:140px;
+                            color:#d0d0d0;
+                            margin-bottom:20px;
+                            font-family:'SimHei','Microsoft YaHei';
+                        ">
+                        {selected_char}
+                        </div>
+                
+                        <div style="
+                            display:grid;
+                            grid-template-columns:repeat(2, 1fr);
+                            gap:15px;
+                            max-width:500px;
+                            margin:auto;
+                        ">
+                        '''
+                
+                        for _ in range(4):
+                            practice_html += f'''
+                            <div style="
+                                border:2px dashed #bbb;
+                                height:180px;
+                                background:white;
+                                position:relative;
+                            ">
+                                <div style="
+                                    position:absolute;
+                                    top:50%;
+                                    left:50%;
+                                    transform:translate(-50%, -50%);
+                                    font-size:100px;
+                                    color:#eeeeee;
+                                    font-family:'SimHei','Microsoft YaHei';
+                                ">
+                                {selected_char}
+                                </div>
+                            </div>
+                            '''
+                
+                        practice_html += "</div></div>"
+                
+                        st.markdown(practice_html, unsafe_allow_html=True)
             st.divider()
