@@ -438,7 +438,7 @@ def render_audio(slot, text: str, slow: bool = False):
     try:
         b64 = build_audio_b64(text, slow)
         slot.markdown(
-            f'<audio autoplay controls style="width:100%;margin-top:8px">'
+            f'<audio autoplay controls loop style="width:100%;margin-top:8px">'
             f'<source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>',
             unsafe_allow_html=True,
         )
@@ -456,7 +456,7 @@ def inline_audio(text: str, slow: bool = False):
     try:
         b64 = build_audio_b64(text, slow)
         st.empty().markdown(
-            f'<audio autoplay controls style="width:100%;margin-top:6px">'
+            f'<audio autoplay controls loop style="width:100%;margin-top:6px">'
             f'<source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>',
             unsafe_allow_html=True,
         )
